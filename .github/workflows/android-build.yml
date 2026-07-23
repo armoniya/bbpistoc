@@ -47,6 +47,18 @@ jobs:
           name: bbpi-trading-debug-apk
           path: bbpi-trading/app/build/outputs/apk/debug/*.apk
 
+      - name: Verify APK signing
+        working-directory: bbpi-trading
+        run: |
+          APKSIGNER=$(find "$ANDROID_HOME" -name apksigner -type f | sort -V | tail -n1)
+          APK_PATH=$(find app/build/outputs/apk/debug -name "*.apk" | head -n1)
+          {
+            echo "apksigner binary: $APKSIGNER"
+            echo "apk path: $APK_PATH"
+            echo "--- apksigner verify --verbose --print-certs ---"
+            "$APKSIGNER" verify --verbose --print-certs "$APK_PATH" 2>&1 || echo "APKSIGNER_EXIT_NONZERO"
+          } | tee apksigner-verify.txt
+
       - name: Publish debug APK to GitHub Release
         working-directory: bbpi-trading
         env:
@@ -56,7 +68,7 @@ jobs:
           APK_PATH=$(find app/build/outputs/apk/debug -name "*.apk" | head -n1)
           cp "$APK_PATH" bbpi-trading-debug.apk
           gh release delete debug-latest --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag || true
-          gh release create debug-latest bbpi-trading-debug.apk \
+          gh release create debug-latest bbpi-trading-debug.apk apksigner-verify.txt \
             --repo "$GITHUB_REPOSITORY" \
             --title "BBPI Trading - Debug APK (latest)" \
             --notes "Otomatik build - commit ${{ github.sha }}" \

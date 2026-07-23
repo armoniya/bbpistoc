@@ -28,6 +28,15 @@ jobs:
         with:
           gradle-version: current
 
+      - name: Ensure debug keystore exists
+        working-directory: bbpi-trading
+        run: |
+          if [ ! -f debug.keystore ]; then
+            keytool -genkeypair -v -keystore debug.keystore -storepass android \
+              -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 \
+              -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          fi
+
       - name: Build debug APK
         working-directory: bbpi-trading
         run: gradle assembleDebug --no-daemon

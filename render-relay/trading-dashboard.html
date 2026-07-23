@@ -1,0 +1,428 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trading göstergesi · 480×480</title>
+<style>
+  /* ---- Tasarım tokenları (LVGL'e port ederken buradan alırsın) ---- */
+  :root{
+    --case:#F5C518;            /* kasa sarısı - imza rengi */
+    --case-dim:#B8930E;
+    --bg:#06040c;             /* sayfa zemini (mor-siyah) */
+    --scr:#221334;           /* ekran üst tonu (koyu mor) */
+    --scr-2:rgba(180,150,225,.06); /* panel (mor cam) */
+    --line:rgba(170,150,215,.14); /* hairline */
+    --grid:rgba(180,160,220,.06);
+    --tx:#F1EEF7;            /* soğuk beyaz */
+    --tx-2:#A29CB4;          /* ikincil */
+    --tx-3:#645C74;          /* silik */
+    --up:#FFD24A;            /* yükseliş = sarı */
+    --dn:#ECE8DC;            /* düşüş = beyaz */
+    --ind1:#F5C518;          /* indikatör 1 = Stoch %K = sarı */
+    --ind2:#D9D5C9;          /* indikatör 2 = Stoch %D = kırık beyaz */
+    --mono:ui-monospace,"SF Mono","JetBrains Mono","Roboto Mono",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:
+      radial-gradient(120% 90% at 50% 8%, #171029 0%, var(--bg) 60%);
+    font-family:var(--sans);color:var(--tx);
+    display:flex;align-items:center;justify-content:center;overflow:hidden;
+  }
+  .stage{transform:scale(var(--scale,1));transform-origin:center}
+
+  /* ---- Cihaz: sarı kasa + ekran ---- */
+  .device{
+    width:480px;height:480px;border-radius:26px;
+    background:linear-gradient(160deg,#FFD733,#F5C518 42%,#D9A912);
+    padding:11px;
+    box-shadow:0 26px 60px -18px rgba(0,0,0,.75), inset 0 1px 0 rgba(255,255,255,.35);
+  }
+  .screen{
+    width:100%;height:100%;border-radius:17px;
+    background:linear-gradient(180deg,#241537 0%,#140b20 55%,#06040c 100%);
+    padding:15px 16px 14px;display:flex;flex-direction:column;gap:11px;
+    box-shadow:inset 0 0 0 1px rgba(0,0,0,.55), inset 0 2px 22px rgba(0,0,0,.5);
+    position:relative;overflow:hidden;
+  }
+  .eyebrow{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--tx-3);font-weight:500}
+
+  /* ---- Header ---- */
+  .head{display:flex;align-items:center;justify-content:space-between;height:22px}
+  .pair{display:flex;align-items:baseline;gap:7px}
+  .pair b{font-size:15px;font-weight:600;letter-spacing:.02em}
+  .pair span{font-size:11px;color:var(--tx-3)}
+  .live{display:flex;align-items:center;gap:10px}
+  .bbpi{font-family:var(--mono);font-size:11px;color:var(--tx-2);letter-spacing:.02em;
+    border:1px solid var(--line);border-radius:6px;padding:2px 6px}
+  .bbpi.low{color:var(--up);border-color:rgba(255,210,74,.45)}
+  .bbpi.high{color:var(--dn);border-color:rgba(236,232,220,.4)}
+  .tf{font-family:var(--mono);font-size:11px;color:var(--tx-2);letter-spacing:.05em;cursor:pointer;
+    border:1px solid var(--line);border-radius:6px;padding:2px 6px;user-select:none}
+  .tf:hover{color:var(--tx)}
+  .dot{display:flex;align-items:center;gap:6px;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--case)}
+  .dot i{width:7px;height:7px;border-radius:50%;background:var(--case);box-shadow:0 0 0 0 rgba(245,197,24,.55);animation:pulse 2.4s ease-out infinite}
+  .dot.stale i{background:var(--tx-3);animation:none;box-shadow:none}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(245,197,24,.5)}70%{box-shadow:0 0 0 7px rgba(245,197,24,0)}100%{box-shadow:0 0 0 0 rgba(245,197,24,0)}}
+
+  /* ---- Hero: fiyat okuması + pozisyon göstergesi ---- */
+  .hero{display:flex;gap:14px;align-items:stretch}
+  .readout{flex:1 1 58%;min-width:0}
+  .price{font-family:var(--mono);font-size:46px;line-height:1;font-weight:600;letter-spacing:-.02em;
+    font-variant-numeric:tabular-nums;color:var(--tx);transition:color .18s ease;white-space:nowrap}
+  .price.up{color:var(--up)} .price.dn{color:var(--dn)}
+  .delta{margin-top:7px;display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:13px;font-variant-numeric:tabular-nums}
+  .delta .chip{padding:2px 7px;border-radius:6px;font-weight:600}
+  .delta.up .chip{color:var(--up);background:rgba(255,210,74,.13)}
+  .delta.dn .chip{color:var(--dn);background:rgba(236,232,220,.12)}
+  .delta small{color:var(--tx-3);font-family:var(--sans);letter-spacing:.02em}
+
+  .pos{flex:1 1 42%;border:1px solid var(--line);border-radius:12px;background:var(--scr-2);
+    padding:10px 12px;display:flex;flex-direction:column;justify-content:space-between}
+  .pos .top{display:flex;align-items:center;justify-content:space-between}
+  .tag{font-family:var(--mono);font-size:10px;letter-spacing:.12em;padding:2px 7px;border-radius:5px;color:var(--tx-3);border:1px solid var(--line)}
+  .tag.long{color:var(--up);border-color:rgba(255,210,74,.45)}
+  .tag.short{color:var(--dn);border-color:rgba(236,232,220,.4)}
+  .pnl{font-family:var(--mono);font-size:30px;font-weight:600;letter-spacing:-.01em;font-variant-numeric:tabular-nums;color:var(--tx-3);line-height:1.05}
+  .pnl.up{color:var(--up)} .pnl.dn{color:var(--dn)}
+  .pos .sub{font-size:11px;color:var(--tx-3);font-family:var(--mono);letter-spacing:.02em}
+
+  /* ---- Grafikler ---- */
+  .chart{flex:1 1 auto;min-height:120px;position:relative}
+  .chart canvas{width:100%;height:100%;display:block}
+  .ind-group{height:154px;display:flex;flex-direction:column;gap:7px}
+  .ind{flex:1 1 0;min-height:0;display:flex;flex-direction:column;gap:3px}
+  .ind .legend{display:flex;align-items:center;gap:16px}
+  .lg{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--tx-2)}
+  .lg i{width:14px;height:2px;border-radius:2px;display:inline-block}
+  .lg b{font-family:var(--mono);color:var(--tx);font-weight:500;font-variant-numeric:tabular-nums;margin-left:2px}
+  .ind .plot{flex:1 1 auto;min-height:0;position:relative}
+  .ind canvas{width:100%;height:100%;display:block}
+
+  @media (prefers-reduced-motion:reduce){.dot i{animation:none}}
+</style>
+
+<div class="stage" id="stage">
+  <div class="device">
+    <div class="screen">
+
+      <div class="head">
+        <div class="pair"><b id="sym">SOL/USDT</b><span>· paper</span></div>
+        <div class="live">
+          <span class="bbpi" id="bbpiBadge">BBPI —</span>
+          <span class="tf" id="tf" title="tıkla: zaman dilimini değiştir (15m/1h/4h)">15m</span>
+          <span class="dot" id="liveDot"><i></i>canlı</span>
+        </div>
+      </div>
+
+      <div class="hero">
+        <div class="readout">
+          <div class="price" id="price">—</div>
+          <div class="delta up" id="delta">
+            <span class="chip" id="deltaChip">+0.00%</span>
+            <small>oturum</small>
+          </div>
+        </div>
+        <div class="pos" id="pos">
+          <div class="top">
+            <span class="eyebrow">pozisyon</span>
+            <span class="tag" id="side">yok</span>
+          </div>
+          <div class="pnl" id="pnl">—</div>
+          <div class="sub" id="posSub">işlem yok</div>
+        </div>
+      </div>
+
+      <div class="chart"><canvas id="c"></canvas></div>
+
+      <div class="ind-group">
+        <div class="ind">
+          <div class="legend">
+            <span class="eyebrow">Stoch RSI</span>
+            <span class="lg"><i style="background:var(--ind1)"></i><span>%K</span><b id="v1">—</b></span>
+            <span class="lg"><i style="background:var(--ind2)"></i><span>%D</span><b id="v2">—</b></span>
+          </div>
+          <div class="plot"><canvas id="ic"></canvas></div>
+        </div>
+        <div class="ind">
+          <div class="legend">
+            <span class="eyebrow">BBPI</span>
+            <span class="lg"><i style="background:var(--case)"></i><span>değer</span><b id="v3">—</b></span>
+          </div>
+          <div class="plot"><canvas id="bc"></canvas></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+/* ==========================================================================
+   AYARLAR
+   ========================================================================== */
+const CONFIG = {
+  dataUrl: "data/dashboard.json",
+  pollMs: 1500,          // JSON kaç ms'de bir yeniden okunsun
+  staleMs: 120000,       // bu süreden uzun süre güncellenmezse "canlı" noktası sönsün
+  visibleCandles: 46,
+  tfCycle: ["15m", "1h", "4h"],
+  defaultTf: "15m",
+};
+
+/* ---- yardımcılar ---- */
+const $ = id => document.getElementById(id);
+const reduce = matchMedia("(prefers-reduced-motion:reduce)").matches;
+const lerp = (a,b,t)=>a+(b-a)*t;
+const fmt = n => n==null ? "—" : n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+
+/* ---- ölçek: cihazı ekrana sığdır ---- */
+function fit(){
+  const s = Math.min(1,(Math.min(innerWidth,innerHeight)-32)/480);
+  $("stage").style.setProperty("--scale", s);
+}
+addEventListener("resize", fit); fit();
+
+/* ==========================================================================
+   VERİ — papertrade.py'nin her döngüde yazdığı data/dashboard.json'dan okunur
+   ========================================================================== */
+let currentTf = CONFIG.defaultTf;
+let payload = null;        // ham JSON (tüm motorlar)
+let eng = null;            // payload.engines[currentTf]
+let lastFetchOk = 0;
+let price = null, prevPrice = null, displayPrice = null;
+
+$("tf").addEventListener("click", () => {
+  const i = CONFIG.tfCycle.indexOf(currentTf);
+  currentTf = CONFIG.tfCycle[(i + 1) % CONFIG.tfCycle.length];
+  $("tf").textContent = currentTf;
+  applySnapshot();
+});
+
+async function poll(){
+  try{
+    const res = await fetch(CONFIG.dataUrl + "?_=" + Date.now(), {cache:"no-store"});
+    if(res.ok){
+      payload = await res.json();
+      lastFetchOk = Date.now();
+      applySnapshot();
+    }
+  }catch(e){ /* bot henüz dosyayı yazmamış olabilir; sessizce yeniden dene */ }
+  setTimeout(poll, CONFIG.pollMs);
+}
+
+function applySnapshot(){
+  if(!payload || !payload.engines[currentTf]) return;
+  eng = payload.engines[currentTf];
+  const candles = eng.candles;
+  if(candles && candles.length){
+    const last = candles[candles.length-1].c;
+    prevPrice = price==null ? last : price;
+    price = last;
+    if(displayPrice==null) displayPrice = price;
+  }
+}
+poll();
+
+/* ==========================================================================
+   ÇİZİM
+   ========================================================================== */
+const c=$("c"), ctx=c.getContext("2d");
+const ic=$("ic"), ictx=ic.getContext("2d");
+const bc=$("bc"), bctx=bc.getContext("2d");
+function hidpi(cv,cx){
+  const dpr=Math.min(devicePixelRatio||1,2), r=cv.getBoundingClientRect();
+  cv.width=r.width*dpr; cv.height=r.height*dpr; cx.setTransform(dpr,0,0,dpr,0,0);
+  return {w:r.width,h:r.height};
+}
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+// 0-100 skalalı panellerde 30/50/70 gri referans çizgileri (RSI/BBPI standart bölge seviyeleri)
+function drawRefLevels(cx, w, Y){
+  [30,50,70].forEach(v=>{
+    const y=Y(v);
+    cx.save();cx.setLineDash([3,3]);cx.strokeStyle="rgba(162,156,180,.35)";cx.lineWidth=1;
+    cx.beginPath();cx.moveTo(0,y);cx.lineTo(w,y);cx.stroke();cx.restore();
+    cx.fillStyle="rgba(162,156,180,.55)";cx.font='500 9px ui-monospace,Menlo,monospace';
+    cx.textBaseline="middle";cx.fillText(String(v),2,y);
+  });
+}
+
+function drawCandles(){
+  const {w,h}=hidpi(c,ctx); ctx.clearRect(0,0,w,h);
+  if(!eng || !eng.candles || !eng.candles.length) return;
+  const view=eng.candles.slice(-CONFIG.visibleCandles);
+  const N=view.length, cw=w/N;
+
+  let lo=Infinity,hi=-Infinity;
+  view.forEach(k=>{lo=Math.min(lo,k.l);hi=Math.max(hi,k.h);});
+  const pad=(hi-lo)*0.12||1; lo-=pad; hi+=pad;
+  const Y=v=>h-((v-lo)/(hi-lo))*h;
+
+  // grid
+  ctx.strokeStyle=css("--grid"); ctx.lineWidth=1;
+  for(let g=0;g<=4;g++){const y=Math.round(h*g/4)+.5;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();}
+
+  // giriş çizgisi
+  const pos = eng.position;
+  if(pos){
+    const y=Y(pos.entry_price);
+    ctx.save();ctx.setLineDash([4,4]);ctx.strokeStyle="rgba(245,197,24,.55)";ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();ctx.restore();
+    ctx.fillStyle="rgba(245,197,24,.14)";const tw=44;ctx.fillRect(0,y-8,tw,16);
+    ctx.fillStyle=css("--case");ctx.font='600 10px ui-monospace,Menlo,monospace';ctx.textBaseline="middle";
+    ctx.fillText("giriş",6,y);
+  }
+
+  // mumlar
+  const up=css("--up"),dn=css("--dn");
+  view.forEach((k,i)=>{
+    const x=i*cw + cw/2;
+    const bull=k.c>=k.o, col=bull?up:dn;
+    const last=i===view.length-1;
+    ctx.globalAlpha=last?1:.92;
+    ctx.strokeStyle=col;ctx.lineWidth=1.4;
+    ctx.beginPath();ctx.moveTo(x,Y(k.h));ctx.lineTo(x,Y(k.l));ctx.stroke();
+    const bw=Math.max(2,cw*0.62), yo=Y(k.o), yc=Y(k.c);
+    ctx.fillStyle=col;
+    ctx.fillRect(x-bw/2,Math.min(yo,yc),bw,Math.max(1.4,Math.abs(yc-yo)));
+  });
+  ctx.globalAlpha=1;
+
+  // güncel fiyat çizgisi (displayPrice ile yumuşatılmış), etiket YOK (son mumları kapatıyordu)
+  const yp=Y(displayPrice ?? price), pcol=(displayPrice ?? price)>=(prevPrice ?? price)?up:dn;
+  ctx.strokeStyle=pcol;ctx.globalAlpha=.5;ctx.lineWidth=1;ctx.setLineDash([2,3]);
+  ctx.beginPath();ctx.moveTo(0,yp);ctx.lineTo(w,yp);ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;
+}
+
+function drawIndicators(){
+  const {w,h}=hidpi(ic,ictx); ictx.clearRect(0,0,w,h);
+  if(!eng || !eng.k_series || !eng.k_series.length) return;
+  const N=CONFIG.visibleCandles;
+  const f=eng.k_series.slice(-N), s=eng.d_series.slice(-N);
+  const valid = arr => arr.filter(v=>v!=null);
+  let lo=0, hi=100;   // Stoch RSI sabit 0-100 skalası
+  const pad=4;
+  const X=i=>i*(w/(Math.max(1,f.length-1))), Y=v=>h-((v-(lo-pad))/((hi+pad)-(lo-pad)))*h;
+
+  drawRefLevels(ictx, w, Y);
+
+  // K>D bölgesini hafifçe doldur
+  const bothValid = f.every(v=>v!=null) && s.every(v=>v!=null);
+  if(bothValid){
+    ictx.beginPath();
+    for(let i=0;i<f.length;i++){const x=X(i);i?ictx.lineTo(x,Y(f[i])):ictx.moveTo(x,Y(f[i]));}
+    for(let i=s.length-1;i>=0;i--) ictx.lineTo(X(i),Y(s[i]));
+    ictx.closePath();
+    const above=f[f.length-1]>=s[s.length-1];
+    ictx.fillStyle=above?"rgba(245,197,24,.08)":"rgba(217,213,201,.07)";ictx.fill();
+  }
+
+  const line=(arr,color)=>{
+    ictx.strokeStyle=color;ictx.lineWidth=1.8;ictx.lineJoin="round";ictx.beginPath();
+    let started=false;
+    for(let i=0;i<arr.length;i++){
+      if(arr[i]==null){started=false;continue;}
+      const x=X(i),y=Y(arr[i]);
+      if(!started){ictx.moveTo(x,y);started=true;} else ictx.lineTo(x,y);
+    }
+    ictx.stroke();
+  };
+  line(s,css("--ind2")); line(f,css("--ind1"));
+
+  const lastVal = arr => { for(let i=arr.length-1;i>=0;i--) if(arr[i]!=null) return arr[i]; return null; };
+  const dot=(arr,color)=>{const v=lastVal(arr); if(v==null) return;
+    const x=X(arr.length-1),y=Y(v);
+    ictx.fillStyle=color;ictx.beginPath();ictx.arc(x,y,2.6,0,7);ictx.fill();};
+  dot(s,css("--ind2")); dot(f,css("--ind1"));
+
+  $("v1").textContent = lastVal(f)==null ? "—" : lastVal(f).toFixed(1);
+  $("v2").textContent = lastVal(s)==null ? "—" : lastVal(s).toFixed(1);
+}
+
+function drawBBPI(){
+  const {w,h}=hidpi(bc,bctx); bctx.clearRect(0,0,w,h);
+  if(!eng || !eng.bpi_series || !eng.bpi_series.length) return;
+  const N=CONFIG.visibleCandles;
+  const arr=eng.bpi_series.slice(-N);
+  let lo=0, hi=100;   // BBPI sabit 0-100 skalası
+  const pad=4;
+  const X=i=>i*(w/(Math.max(1,arr.length-1))), Y=v=>h-((v-(lo-pad))/((hi+pad)-(lo-pad)))*h;
+
+  drawRefLevels(bctx, w, Y);
+
+  const lastVal = a => { for(let i=a.length-1;i>=0;i--) if(a[i]!=null) return a[i]; return null; };
+  const v = lastVal(arr);
+  const col = v==null ? css("--case") : (v<=35?css("--up"):v>=65?css("--dn"):css("--case"));
+
+  bctx.strokeStyle=col;bctx.lineWidth=1.8;bctx.lineJoin="round";bctx.beginPath();
+  let started=false;
+  for(let i=0;i<arr.length;i++){
+    if(arr[i]==null){started=false;continue;}
+    const x=X(i),y=Y(arr[i]);
+    if(!started){bctx.moveTo(x,y);started=true;} else bctx.lineTo(x,y);
+  }
+  bctx.stroke();
+
+  if(v!=null){
+    const x=X(arr.length-1),y=Y(v);
+    bctx.fillStyle=col;bctx.beginPath();bctx.arc(x,y,2.6,0,7);bctx.fill();
+  }
+
+  $("v3").textContent = v==null ? "—" : v.toFixed(0);
+}
+
+/* ---- HTML okumaları ---- */
+function drawHUD(){
+  const p=$("price");
+  const dp = displayPrice ?? price;
+  p.textContent = dp==null ? "—" : fmt(dp);
+  p.classList.toggle("up", dp!=null && prevPrice!=null && dp>prevPrice);
+  p.classList.toggle("dn", dp!=null && prevPrice!=null && dp<prevPrice);
+
+  const dEl=$("delta");
+  if(eng && eng.candles && eng.candles.length){
+    const view=eng.candles.slice(-CONFIG.visibleCandles);
+    const ref=view[0].o;
+    const d=((dp ?? ref)-ref)/ref*100;
+    dEl.className="delta "+(d>=0?"up":"dn");
+    $("deltaChip").textContent=(d>=0?"▲ +":"▼ ")+d.toFixed(2)+"%";
+  }
+
+  const side=$("side"), pnl=$("pnl"), sub=$("posSub");
+  const pos = eng ? eng.position : null;
+  if(pos){
+    side.textContent="long"; side.className="tag long";
+    pnl.textContent=(pos.upnl_pct>=0?"+":"")+pos.upnl_pct.toFixed(2)+"%";
+    pnl.className="pnl "+(pos.upnl_pct>=0?"up":"dn");
+    sub.textContent="giriş "+fmt(pos.entry_price)+" · breakeven "+fmt(pos.breakeven);
+  }else{
+    side.textContent="yok"; side.className="tag";
+    pnl.textContent="—"; pnl.className="pnl";
+    sub.textContent="işlem yok";
+  }
+
+  const bbpiEl=$("bbpiBadge");
+  const bpiSeries = eng ? eng.bpi_series : null;
+  const bpiVal = bpiSeries && bpiSeries.length ? bpiSeries[bpiSeries.length-1] : null;
+  if(bpiVal==null){
+    bbpiEl.textContent="BBPI —"; bbpiEl.className="bbpi";
+  }else{
+    bbpiEl.textContent="BBPI "+bpiVal.toFixed(0);
+    bbpiEl.className="bbpi "+(bpiVal<=35?"low":bpiVal>=65?"high":"");
+  }
+
+  const stale = Date.now()-lastFetchOk > CONFIG.staleMs;
+  $("liveDot").classList.toggle("stale", lastFetchOk===0 || stale);
+}
+
+/* ---- döngü ---- */
+function loop(){
+  if(price!=null){
+    displayPrice = reduce ? price : lerp(displayPrice ?? price, price, 0.06);
+  }
+  drawCandles(); drawIndicators(); drawBBPI(); drawHUD();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>

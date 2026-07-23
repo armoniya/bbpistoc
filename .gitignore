@@ -1,0 +1,6 @@
+data/
+bpi_env/
+__pycache__/
+.claude/
+*.pyc
+SOLTRY_Canlı_işlem.png

@@ -1,0 +1,16 @@
+[Unit]
+Description=BBPI paper-trade botu
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/bbpi
+EnvironmentFile=-/home/pi/bbpi/.env
+ExecStart=/home/pi/bbpi/venv/bin/python papertrade.py
+Restart=always
+RestartSec=60
+
+[Install]
+WantedBy=multi-user.target

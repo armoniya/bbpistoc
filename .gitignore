@@ -1,4 +1,4 @@
-data/
+/data/
 bpi_env/
 __pycache__/
 .claude/

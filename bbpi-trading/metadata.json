@@ -1,0 +1,6 @@
+{
+  "name": "BBPI Trading",
+  "description": "Live trading dashboard and home screen widget for tracking SOL/USDT prices, Stoch RSI, BBPI indicator, and active positions from bbpistoc.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

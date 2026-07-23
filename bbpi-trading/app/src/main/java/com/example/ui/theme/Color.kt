@@ -2,43 +2,47 @@ package com.example.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Frosted Glass Theme Palette
-val FrostedBg = Color(0xFFE1E2E9)
-val FrostedHeaderTop = Color(0xFFECEEF5)
-val GlassSurface = Color(0xEBFEF7FF)
-val GlassCardBg = Color(0xF2F3EDF7)
-val GlassCardWhite = Color(0xE6FFFFFF)
-val GlassBorder = Color(0x26000000)
-val GlassBorderSubtle = Color(0x1A000000)
+// BBPI Trading brand palette - mirrors the CSS custom properties in
+// trading-dashboard.html (--case, --bg, --scr, --tx, --up, --dn, ...) so the
+// Android app and widget look like the same product as the web dashboard.
+val CaseYellow = Color(0xFFF5C518)
+val CaseYellowDim = Color(0xFFB8930E)
 
-val AccentIndigo = Color(0xFF3F51B5)
-val AccentPurpleContainer = Color(0xFFEADDFF)
-val AccentPurpleText = Color(0xFF21005D)
-val AccentBluePill = Color(0xFFD3E3FD)
-val AccentBluePillText = Color(0xFF041E49)
+val BgDark = Color(0xFF06040C)
+val ScreenTop = Color(0xFF171029)
 
-val TextPrimary = Color(0xFF1C1B1F)
-val TextSecondary = Color(0xFF49454F)
-val TextMuted = Color(0xFF79747E)
+val PanelBg = Color(0xFF241537)
+val PanelBorder = Color(0x24AA96D7)
+val GridLine = Color(0x1FB4A0DC)
 
-val BullishGreen = Color(0xFF1B6F3E)
-val BearishRed = Color(0xFFB3261E)
+val TextColdWhite = Color(0xFFF1EEF7)
+val TextSecondary = Color(0xFFA29CB4)
+val TextMuted = Color(0xFF645C74)
 
-val IndicatorK = Color(0xFF3F51B5)
-val IndicatorD = Color(0xFF79747E)
+val BullishYellow = Color(0xFFFFD24A)
+val BearishWhite = Color(0xFFECE8DC)
 
-// Retain alias references for compatibility across components
-val CaseYellow = AccentIndigo
-val CaseYellowDim = Color(0xFF283593)
-val BgDark = FrostedBg
-val ScreenTop = FrostedHeaderTop
-val PanelBg = GlassCardBg
-val PanelBorder = GlassBorder
-val GridLine = Color(0x1F000000)
+val IndicatorK = Color(0xFFF5C518)
+val IndicatorD = Color(0xFFD9D5C9)
 
-val TextColdWhite = TextPrimary
+// Glass/accent tokens referenced directly by some components - kept as
+// separate names for call-site clarity, but resolved to the same brand
+// palette above rather than a generic light "Frosted Glass" theme.
+val GlassSurface = Color(0xFF140B20)
+val GlassCardBg = PanelBg
+val GlassCardWhite = PanelBg
+val GlassBorder = PanelBorder
+val GlassBorderSubtle = Color(0x1AAA96D7)
 
-val BullishYellow = BullishGreen
-val BearishWhite = BearishRed
+val FrostedBg = BgDark
+val FrostedHeaderTop = ScreenTop
 
+val AccentIndigo = CaseYellow
+val AccentPurpleContainer = Color(0x33F5C518)
+val AccentPurpleText = CaseYellow
+val AccentBluePill = CaseYellow
+val AccentBluePillText = BgDark
 
+val TextPrimary = TextColdWhite
+val BullishGreen = BullishYellow
+val BearishRed = BearishWhite

@@ -1,33 +1,33 @@
 package com.example.ui.theme
 
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.lightColorScheme
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 
-private val FrostedGlassColorScheme = lightColorScheme(
-    primary = AccentIndigo,
-    onPrimary = GlassSurface,
+private val TradingTerminalColorScheme = darkColorScheme(
+    primary = CaseYellow,
+    onPrimary = BgDark,
     primaryContainer = AccentPurpleContainer,
     onPrimaryContainer = AccentPurpleText,
-    secondary = BullishGreen,
-    onSecondary = GlassSurface,
-    background = FrostedBg,
-    onBackground = TextPrimary,
+    secondary = BullishYellow,
+    onSecondary = BgDark,
+    background = BgDark,
+    onBackground = TextColdWhite,
     surface = GlassSurface,
-    onSurface = TextPrimary,
-    surfaceVariant = GlassCardBg,
+    onSurface = TextColdWhite,
+    surfaceVariant = PanelBg,
     onSurfaceVariant = TextSecondary,
-    outline = GlassBorder
+    outline = PanelBorder
 )
 
 @Composable
 fun MyApplicationTheme(
-    darkTheme: Boolean = false,
+    darkTheme: Boolean = true,
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     MaterialTheme(
-        colorScheme = FrostedGlassColorScheme,
+        colorScheme = TradingTerminalColorScheme,
         typography = Typography,
         content = content
     )

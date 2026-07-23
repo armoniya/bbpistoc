@@ -74,7 +74,7 @@ fun HeroSection(
 
             // Delta Chip
             val isUp = sessionDeltaPct >= 0
-            val chipBg = if (isUp) Color(0x201B6F3E) else Color(0x20B3261E)
+            val chipBg = if (isUp) Color(0x20FFD24A) else Color(0x20ECE8DC)
             val chipTextColor = if (isUp) BullishGreen else BearishRed
             val chipText = String.format(
                 Locale.US,

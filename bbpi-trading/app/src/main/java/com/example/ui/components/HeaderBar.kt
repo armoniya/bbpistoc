@@ -121,7 +121,7 @@ fun HeaderBar(
                     bbpiValue == null -> TextSecondary
                     bbpiValue <= 35 -> BullishGreen
                     bbpiValue >= 65 -> BearishRed
-                    else -> AccentIndigo
+                    else -> TextSecondary
                 }
                 Box(
                     modifier = Modifier

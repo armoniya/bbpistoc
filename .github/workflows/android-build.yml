@@ -8,6 +8,9 @@ on:
       - '.github/workflows/android-build.yml'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -34,3 +37,18 @@ jobs:
         with:
           name: bbpi-trading-debug-apk
           path: bbpi-trading/app/build/outputs/apk/debug/*.apk
+
+      - name: Publish debug APK to GitHub Release
+        working-directory: bbpi-trading
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          APK_PATH=$(find app/build/outputs/apk/debug -name "*.apk" | head -n1)
+          cp "$APK_PATH" bbpi-trading-debug.apk
+          gh release delete debug-latest --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag || true
+          gh release create debug-latest bbpi-trading-debug.apk \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "BBPI Trading - Debug APK (latest)" \
+            --notes "Otomatik build - commit ${{ github.sha }}" \
+            --prerelease
